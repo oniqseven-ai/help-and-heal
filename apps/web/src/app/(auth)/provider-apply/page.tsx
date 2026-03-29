@@ -347,7 +347,7 @@ export default function ProviderApplyPage() {
             </p>
 
             <label className="flex items-start gap-3 rounded-xl border border-gray-100 p-4 hover:bg-gray-50 cursor-pointer">
-              <input type="checkbox" checked={form.codeOfEthicsAgreed} onChange={(e) => update('codeOfEthicsAgreed', e.target.checked)} className="mt-0.5 h-4 w-4 rounded border-gray-300 text-primary" />
+              <input type="checkbox" checked={form.codeOfEthicsAgreed} onChange={(e) => update('codeOfEthicsAgreed', e.target.checked)} className="mt-0.5 h-5 w-5 rounded border-gray-300 text-primary" />
               <div>
                 <div className="text-sm font-medium">Code of Ethics *</div>
                 <div className="text-xs text-text-light mt-0.5">I agree to abide by the Help & Heal provider code of ethics, including maintaining confidentiality, practicing within my scope of competence, and prioritizing client safety.</div>
@@ -355,7 +355,7 @@ export default function ProviderApplyPage() {
             </label>
 
             <label className="flex items-start gap-3 rounded-xl border border-gray-100 p-4 hover:bg-gray-50 cursor-pointer">
-              <input type="checkbox" checked={form.dpdpConsentAgreed} onChange={(e) => update('dpdpConsentAgreed', e.target.checked)} className="mt-0.5 h-4 w-4 rounded border-gray-300 text-primary" />
+              <input type="checkbox" checked={form.dpdpConsentAgreed} onChange={(e) => update('dpdpConsentAgreed', e.target.checked)} className="mt-0.5 h-5 w-5 rounded border-gray-300 text-primary" />
               <div>
                 <div className="text-sm font-medium">DPDP Act 2023 Consent *</div>
                 <div className="text-xs text-text-light mt-0.5">I consent to the processing of my personal data in accordance with the Digital Personal Data Protection Act, 2023. I understand my data will be stored securely in India.</div>
@@ -363,7 +363,7 @@ export default function ProviderApplyPage() {
             </label>
 
             <label className="flex items-start gap-3 rounded-xl border border-gray-100 p-4 hover:bg-gray-50 cursor-pointer">
-              <input type="checkbox" checked={form.termsAgreed} onChange={(e) => update('termsAgreed', e.target.checked)} className="mt-0.5 h-4 w-4 rounded border-gray-300 text-primary" />
+              <input type="checkbox" checked={form.termsAgreed} onChange={(e) => update('termsAgreed', e.target.checked)} className="mt-0.5 h-5 w-5 rounded border-gray-300 text-primary" />
               <div>
                 <div className="text-sm font-medium">Terms & Conditions *</div>
                 <div className="text-xs text-text-light mt-0.5">I agree to the Help & Heal provider terms and conditions, including the 70/30 revenue split, weekly payouts via RazorpayX, and session conduct guidelines.</div>

@@ -53,7 +53,7 @@ export default function AdminDashboard() {
       <p className="mt-1 text-text-light">Provider onboarding overview</p>
 
       {/* Stats */}
-      <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mt-6 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         <div className="rounded-2xl border border-gray-100 bg-white p-5">
           <div className="flex items-center gap-3">
             <ClipboardList className="h-5 w-5 text-accent" />
@@ -87,7 +87,7 @@ export default function AdminDashboard() {
       {/* Providers by tier */}
       <div className="mt-6 rounded-2xl border border-gray-100 bg-white p-6">
         <h2 className="font-semibold">Active Providers by Tier</h2>
-        <div className="mt-4 grid gap-3 sm:grid-cols-4">
+        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
           {Object.entries(TIER_LABEL).map(([key, label]) => (
             <div key={key} className="rounded-xl bg-background p-4 text-center">
               <p className="text-2xl font-bold">{stats.tierCounts[key] || 0}</p>

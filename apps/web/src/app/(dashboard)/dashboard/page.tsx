@@ -65,7 +65,7 @@ export default function DashboardPage() {
   return (
     <div className="mx-auto max-w-5xl space-y-8">
       <div>
-        <h1 className="text-2xl font-bold md:text-3xl">
+        <h1 className="text-xl font-bold sm:text-2xl md:text-3xl">
           Welcome back, {userName} 👋
         </h1>
         <p className="mt-1 text-text-light">

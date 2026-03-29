@@ -49,7 +49,7 @@ export default function ProviderEarningsPage() {
           <Wallet className="h-5 w-5" />
           <span className="text-sm font-medium">Lifetime Net Earnings</span>
         </div>
-        <div className="mt-2 text-4xl font-extrabold">{formatPaise(allTime?.net ?? 0)}</div>
+        <div className="mt-2 text-3xl font-extrabold sm:text-4xl">{formatPaise(allTime?.net ?? 0)}</div>
         <p className="mt-1 text-sm text-white/70">
           {allTime?.sessionCount ?? 0} sessions · {((allTime?.totalMinutes ?? 0) / 60).toFixed(0)} hours
         </p>

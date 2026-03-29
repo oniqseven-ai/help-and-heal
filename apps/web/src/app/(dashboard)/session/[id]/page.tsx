@@ -196,10 +196,10 @@ export default function SessionPage({ params }: { params: Promise<{ id: string }
 
           <div className="mt-6">
             <h3 className="text-sm font-medium">How are you feeling? <span className="text-text-light">(1-10)</span></h3>
-            <div className="mt-2 flex gap-2">
+            <div className="mt-2 grid grid-cols-5 gap-2 sm:grid-cols-10">
               {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
                 <button key={n} onClick={() => setMood(n)}
-                  className={`flex h-9 w-9 items-center justify-center rounded-lg text-sm font-medium transition-all ${mood === n ? 'bg-primary text-white' : 'bg-background text-text-light hover:bg-gray-100'}`}>
+                  className={`flex h-10 w-full items-center justify-center rounded-lg text-sm font-medium transition-all ${mood === n ? 'bg-primary text-white' : 'bg-background text-text-light hover:bg-gray-100'}`}>
                   {n}
                 </button>
               ))}
@@ -244,7 +244,7 @@ export default function SessionPage({ params }: { params: Promise<{ id: string }
   /* ─── Active Chat ─── */
   if (stage === 'active') {
     return (
-      <div className="mx-auto flex max-w-2xl flex-col" style={{ height: 'calc(100vh - 180px)' }}>
+      <div className="mx-auto flex max-w-2xl flex-col" style={{ height: 'calc(100vh - 220px)' }}>
         <div className="flex items-center justify-between rounded-t-2xl border border-gray-100 bg-white p-4">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-xs font-bold text-white">{initials}</div>
@@ -320,10 +320,10 @@ export default function SessionPage({ params }: { params: Promise<{ id: string }
 
           <div className="mt-6 rounded-2xl border border-gray-100 bg-white p-6">
             <h2 className="font-semibold">How do you feel now? <span className="text-text-light text-sm font-normal">(1-10)</span></h2>
-            <div className="mt-3 flex gap-2">
+            <div className="mt-3 grid grid-cols-5 gap-2 sm:grid-cols-10">
               {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
                 <button key={n} onClick={() => setPostMood(n)}
-                  className={`flex h-9 w-9 items-center justify-center rounded-lg text-sm font-medium transition-all ${postMood === n ? 'bg-secondary text-white' : 'bg-background text-text-light hover:bg-gray-100'}`}>
+                  className={`flex h-10 w-full items-center justify-center rounded-lg text-sm font-medium transition-all ${postMood === n ? 'bg-secondary text-white' : 'bg-background text-text-light hover:bg-gray-100'}`}>
                   {n}
                 </button>
               ))}

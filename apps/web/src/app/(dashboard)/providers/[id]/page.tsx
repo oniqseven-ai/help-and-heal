@@ -59,7 +59,7 @@ export default function ProviderDetailPage({ params }: { params: Promise<{ id: s
         <ArrowLeft className="h-4 w-4" /> Back
       </button>
 
-      <div className="rounded-2xl border border-gray-100 bg-white p-6 md:p-8">
+      <div className="rounded-2xl border border-gray-100 bg-white p-4 sm:p-6 md:p-8">
         <div className="flex flex-col items-center text-center sm:flex-row sm:items-start sm:text-left">
           <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-primary text-2xl font-bold text-white">{initials}</div>
           <div className="mt-4 sm:ml-6 sm:mt-0">
@@ -123,7 +123,7 @@ export default function ProviderDetailPage({ params }: { params: Promise<{ id: s
 
       {/* Reviews */}
       {provider.ratings && provider.ratings.length > 0 && (
-        <div className="mt-6 rounded-2xl border border-gray-100 bg-white p-6 md:p-8">
+        <div className="mt-6 rounded-2xl border border-gray-100 bg-white p-4 sm:p-6 md:p-8">
           <h2 className="text-lg font-bold">Reviews</h2>
           <div className="mt-4 space-y-4">
             {provider.ratings.map((review, i) => (

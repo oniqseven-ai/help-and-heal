@@ -77,7 +77,7 @@ export default function ProviderProfilePage() {
       <p className="mt-1 text-text-light">Manage how users see you</p>
 
       {/* Read-only stats */}
-      <div className="mt-6 grid gap-4 sm:grid-cols-4">
+      <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
         <div className="rounded-xl bg-white border border-gray-100 p-4 text-center">
           <p className="text-xs text-text-light">Tier</p>
           <p className="mt-1 font-semibold text-sm">{TIER_LABEL[profile.tier]}</p>

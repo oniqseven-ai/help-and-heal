@@ -38,9 +38,9 @@ export default function ProviderStatsPage() {
 
       {/* Rating overview */}
       <div className="mt-6 rounded-2xl border border-gray-100 bg-white p-6">
-        <div className="flex items-center gap-4">
+        <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
           <div className="text-center">
-            <div className="text-4xl font-extrabold">{stats.ratingAvg}</div>
+            <div className="text-3xl font-extrabold sm:text-4xl">{stats.ratingAvg}</div>
             <div className="mt-1 flex items-center justify-center gap-0.5">
               {[1, 2, 3, 4, 5].map((n) => (
                 <Star key={n} className={`h-4 w-4 ${n <= Math.round(stats.ratingAvg) ? 'fill-accent text-accent' : 'text-gray-200'}`} />
@@ -68,7 +68,7 @@ export default function ProviderStatsPage() {
       </div>
 
       {/* Stats grid */}
-      <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="mt-6 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
         <div className="flex items-center gap-3 rounded-xl border border-gray-100 bg-white p-4">
           <Clock className="h-8 w-8 text-primary" />
           <div>

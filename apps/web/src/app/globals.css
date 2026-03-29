@@ -17,3 +17,13 @@
 html {
   scroll-behavior: smooth;
 }
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Prevent text overflow globally */
+h1, h2, h3, h4, p, span, a {
+  overflow-wrap: break-word;
+  word-break: break-word;
+}

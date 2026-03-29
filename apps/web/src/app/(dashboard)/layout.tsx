@@ -117,7 +117,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {sidebarOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div className="absolute inset-0 bg-black/40" onClick={() => setSidebarOpen(false)} />
-          <aside className="absolute left-0 top-0 h-full w-72 bg-white shadow-xl">
+          <aside className="absolute left-0 top-0 h-full w-[85vw] max-w-72 bg-white shadow-xl">
             <div className="flex items-center justify-between border-b border-gray-100 px-6 py-5">
               <span className="text-xl font-bold text-primary">
                 Help<span className="text-secondary">&</span>Heal

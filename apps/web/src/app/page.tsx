@@ -102,7 +102,7 @@ function Hero() {
           Launching Soon in India
         </div>
 
-        <h1 className="mx-auto max-w-4xl text-4xl font-extrabold leading-tight tracking-tight md:text-6xl lg:text-7xl">
+        <h1 className="mx-auto max-w-4xl text-3xl font-extrabold leading-tight tracking-tight sm:text-4xl md:text-6xl lg:text-7xl">
           Talk to someone who cares.{' '}
           <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
             Anytime. Anywhere.
@@ -154,14 +154,14 @@ function Hero() {
         </p>
 
         {/* Stats */}
-        <div className="mx-auto mt-16 grid max-w-3xl grid-cols-3 gap-8">
+        <div className="mx-auto mt-12 grid max-w-3xl grid-cols-3 gap-4 sm:mt-16 sm:gap-8">
           {[
             { value: '90s', label: 'Avg. connect time' },
             { value: '₹5/min', label: 'Starting from' },
             { value: '100%', label: 'Private & secure' },
           ].map((stat) => (
             <div key={stat.label}>
-              <div className="text-3xl font-bold text-primary md:text-4xl">
+              <div className="text-2xl font-bold text-primary sm:text-3xl md:text-4xl">
                 {stat.value}
               </div>
               <div className="mt-1 text-sm text-text-light">{stat.label}</div>

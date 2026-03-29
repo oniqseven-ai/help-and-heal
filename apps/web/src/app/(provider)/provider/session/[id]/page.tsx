@@ -101,7 +101,7 @@ export default function ProviderSessionPage({ params }: { params: Promise<{ id: 
   }
 
   return (
-    <div className="mx-auto flex max-w-2xl flex-col" style={{ height: 'calc(100vh - 180px)' }}>
+    <div className="mx-auto flex max-w-2xl flex-col" style={{ height: 'calc(100vh - 220px)' }}>
       {/* Header */}
       <div className="flex items-center justify-between rounded-t-2xl border border-gray-100 bg-white p-4">
         <div>

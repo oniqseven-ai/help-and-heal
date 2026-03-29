@@ -59,8 +59,8 @@ export default function ApplicationsPage() {
       <p className="mt-1 text-text-light">{apps.length} total applications</p>
 
       {/* Filters */}
-      <div className="mt-6 flex flex-wrap gap-3">
-        <div className="relative flex-1 min-w-[200px]">
+      <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+        <div className="relative flex-1 min-w-0 sm:min-w-[200px]">
           <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
           <input
             type="text"
@@ -71,7 +71,7 @@ export default function ApplicationsPage() {
           />
         </div>
         <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
-          className="rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-primary">
+          className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-primary sm:w-auto">
           <option value="">All statuses</option>
           <option value="SUBMITTED">Submitted</option>
           <option value="UNDER_REVIEW">Under Review</option>
@@ -79,7 +79,7 @@ export default function ApplicationsPage() {
           <option value="REJECTED">Rejected</option>
         </select>
         <select value={tierFilter} onChange={(e) => setTierFilter(e.target.value)}
-          className="rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-primary">
+          className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-primary sm:w-auto">
           <option value="">All tiers</option>
           <option value="LISTENER">Listener</option>
           <option value="COUNSELOR">Counselor</option>

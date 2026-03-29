@@ -49,7 +49,7 @@ export default function WalletPage() {
           <Wallet className="h-5 w-5" />
           <span className="text-sm font-medium">Wallet Balance</span>
         </div>
-        <div className="mt-2 text-4xl font-extrabold md:text-5xl">
+        <div className="mt-2 text-3xl font-extrabold sm:text-4xl md:text-5xl">
           {formatPaise(balance)}
         </div>
         <div className="mt-4 rounded-xl bg-white/20 px-4 py-2.5 text-sm backdrop-blur-sm">
