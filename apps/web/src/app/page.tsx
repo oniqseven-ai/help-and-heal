@@ -26,10 +26,10 @@ function Navbar() {
             Safety
           </a>
           <a
-            href="#waitlist"
+            href="/login"
             className="rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-primary/25 hover:bg-primary-dark transition-colors"
           >
-            Join Waitlist
+            Get Started
           </a>
         </div>
 
@@ -53,11 +53,11 @@ function Navbar() {
             <a href="#pricing" onClick={() => setMobileOpen(false)} className="text-sm font-medium text-text-light">Pricing</a>
             <a href="#safety" onClick={() => setMobileOpen(false)} className="text-sm font-medium text-text-light">Safety</a>
             <a
-              href="#waitlist"
+              href="/login"
               onClick={() => setMobileOpen(false)}
               className="mt-2 rounded-full bg-primary px-6 py-2.5 text-center text-sm font-semibold text-white"
             >
-              Join Waitlist
+              Get Started
             </a>
           </div>
         </div>
