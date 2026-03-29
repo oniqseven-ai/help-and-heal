@@ -107,6 +107,15 @@ export default function LoginPage() {
           Create one
         </Link>
       </div>
+
+      <div className="mt-4 border-t border-gray-100 pt-4">
+        <p className="text-center text-xs text-text-light">
+          Are you a mental health professional?{' '}
+          <Link href="/provider-apply" className="font-semibold text-secondary hover:underline">
+            Apply as a Provider
+          </Link>
+        </p>
+      </div>
     </div>
   );
 }

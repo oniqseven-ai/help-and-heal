@@ -13,6 +13,7 @@ import {
   LogOut,
   Menu,
   X,
+  ShieldCheck,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { formatPaise } from '@/lib/mock-data';
@@ -48,6 +49,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, [pathname]);
 
   const userName = session?.user?.name || 'User';
+  const userRole = (session?.user as { role?: string })?.role;
   const userInitial = userName.charAt(0).toUpperCase();
 
   return (
@@ -82,6 +84,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </nav>
 
           <div className="border-t border-gray-100 p-3">
+            {userRole === 'ADMIN' && (
+              <Link
+                href="/admin"
+                className="flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium text-accent hover:bg-accent/10"
+              >
+                <ShieldCheck className="h-5 w-5" />
+                Admin Panel
+              </Link>
+            )}
             <button
               onClick={() => signOut({ callbackUrl: '/login' })}
               className="flex w-full items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium text-text-light hover:bg-gray-50 hover:text-error"

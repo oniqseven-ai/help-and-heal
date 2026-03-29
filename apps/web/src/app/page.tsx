@@ -25,6 +25,9 @@ function Navbar() {
           <a href="#safety" className="text-sm font-medium text-text-light hover:text-primary transition-colors">
             Safety
           </a>
+          <a href="/provider-apply" className="text-sm font-medium text-text-light hover:text-primary transition-colors">
+            Become a Provider
+          </a>
           <a
             href="/login"
             className="rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-primary/25 hover:bg-primary-dark transition-colors"
@@ -52,6 +55,7 @@ function Navbar() {
             <a href="#how-it-works" onClick={() => setMobileOpen(false)} className="text-sm font-medium text-text-light">How it Works</a>
             <a href="#pricing" onClick={() => setMobileOpen(false)} className="text-sm font-medium text-text-light">Pricing</a>
             <a href="#safety" onClick={() => setMobileOpen(false)} className="text-sm font-medium text-text-light">Safety</a>
+            <a href="/provider-apply" onClick={() => setMobileOpen(false)} className="text-sm font-medium text-text-light">Become a Provider</a>
             <a
               href="/login"
               onClick={() => setMobileOpen(false)}
@@ -534,8 +538,8 @@ function Footer() {
             </h4>
             <ul className="space-y-2.5 text-sm text-text-light">
               <li><a href="#" className="hover:text-primary transition-colors">About Us</a></li>
-              <li><a href="#" className="hover:text-primary transition-colors">Become a Listener</a></li>
-              <li><a href="#" className="hover:text-primary transition-colors">For Counselors</a></li>
+              <li><a href="/provider-apply" className="hover:text-primary transition-colors">Become a Listener</a></li>
+              <li><a href="/provider-apply" className="hover:text-primary transition-colors">For Counselors</a></li>
               <li><a href="#" className="hover:text-primary transition-colors">Careers</a></li>
             </ul>
           </div>
