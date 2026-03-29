@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import {
   LayoutDashboard,
   Clock,
@@ -58,19 +58,29 @@ export default function ProviderLayout({ children }: { children: React.ReactNode
     }
   }, [authStatus, role, router]);
 
+  const fetchStatus = useCallback(() => {
+    fetch('/api/provider/status')
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.success) {
+          setProviderStatus(d.data);
+          setIsOnline(d.data.provider?.isOnline || false);
+        }
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
   useEffect(() => {
-    if (authStatus === 'authenticated') {
-      fetch('/api/provider/status')
-        .then((r) => r.json())
-        .then((d) => {
-          if (d.success) {
-            setProviderStatus(d.data);
-            setIsOnline(d.data.provider?.isOnline || false);
-          }
-        })
-        .finally(() => setLoading(false));
+    if (authStatus === 'authenticated') fetchStatus();
+  }, [authStatus, fetchStatus]);
+
+  // Poll for status updates while waiting for approval
+  useEffect(() => {
+    if (providerStatus && !providerStatus.hasProviderRecord) {
+      const poll = setInterval(fetchStatus, 10000);
+      return () => clearInterval(poll);
     }
-  }, [authStatus]);
+  }, [providerStatus, fetchStatus]);
 
   const handleToggleOnline = async () => {
     const res = await fetch('/api/provider/toggle-online', { method: 'POST' });

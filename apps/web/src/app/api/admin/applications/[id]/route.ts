@@ -48,7 +48,28 @@ export async function PATCH(
 
   const adminId = (session!.user as { id: string }).id;
 
-  // If approving, verify all required checklist items are complete
+  // Validate state transitions
+  const validTransitions: Record<string, string[]> = {
+    DRAFT: ['SUBMITTED'],
+    SUBMITTED: ['UNDER_REVIEW', 'APPROVED', 'REJECTED'],
+    UNDER_REVIEW: ['APPROVED', 'REJECTED', 'RESUBMISSION_REQUESTED'],
+    APPROVED: [],
+    REJECTED: [],
+    RESUBMISSION_REQUESTED: ['SUBMITTED'],
+  };
+
+  if (!validTransitions[application.status]?.includes(status)) {
+    return NextResponse.json({
+      success: false,
+      error: `Cannot change status from ${application.status} to ${status}`,
+    }, { status: 400 });
+  }
+
+  if (status === 'REJECTED' && !rejectionReason) {
+    return NextResponse.json({ success: false, error: 'Rejection reason is required' }, { status: 400 });
+  }
+
+  // If approving, validate data and create Provider atomically
   if (status === 'APPROVED') {
     const incomplete = application.checklistItems.filter((c) => c.isRequired && !c.isCompleted);
     if (incomplete.length > 0) {
@@ -58,26 +79,44 @@ export async function PATCH(
       }, { status: 400 });
     }
 
-    // Create Provider record
-    await prisma.provider.create({
-      data: {
-        userId: application.userId,
-        tier: application.tier,
-        displayName: application.displayName,
-        bio: application.bio,
-        specialties: application.specialties,
-        languages: application.languages,
-        ratePerMinute: application.requestedRate,
-        isVerified: true,
-        isOnline: false,
-      },
+    if (!application.displayName || application.specialties.length === 0 || application.languages.length === 0 || application.requestedRate <= 0) {
+      return NextResponse.json({
+        success: false,
+        error: 'Application data is incomplete. Please check display name, specialties, languages, and rate.',
+      }, { status: 400 });
+    }
+
+    // Atomic transaction: create Provider + update application status
+    const updated = await prisma.$transaction(async (tx) => {
+      await tx.provider.create({
+        data: {
+          userId: application.userId,
+          tier: application.tier,
+          displayName: application.displayName,
+          bio: application.bio,
+          specialties: application.specialties,
+          languages: application.languages,
+          ratePerMinute: application.requestedRate,
+          isVerified: true,
+          isOnline: false,
+        },
+      });
+
+      return tx.providerApplication.update({
+        where: { id },
+        data: {
+          status: 'APPROVED',
+          reviewedBy: adminId,
+          reviewedAt: new Date(),
+          ...(reviewNotes ? { reviewNotes } : {}),
+        },
+      });
     });
+
+    return NextResponse.json({ success: true, data: updated });
   }
 
-  if (status === 'REJECTED' && !rejectionReason) {
-    return NextResponse.json({ success: false, error: 'Rejection reason is required' }, { status: 400 });
-  }
-
+  // For non-approval status changes
   const updated = await prisma.providerApplication.update({
     where: { id },
     data: {

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
+import { useSession, signOut } from 'next-auth/react';
 import {
   ArrowLeft,
   ArrowRight,
@@ -88,7 +88,28 @@ export default function ProviderApplyPage() {
     }));
   };
 
+  const validateForm = (): string | null => {
+    if (!form.fullName || !form.displayName || !form.phone) return 'Please fill in all required personal fields.';
+    if (!form.tier) return 'Please select a provider tier.';
+    if (!form.bio) return 'Please write a bio.';
+    if (form.specialties.length === 0) return 'Please select at least one specialty.';
+    if (form.languages.length === 0) return 'Please select at least one language.';
+    if (form.requestedRate <= 0) return 'Please enter a valid rate per minute.';
+    if (form.tier !== 'LISTENER') {
+      if (!form.highestDegree || !form.university) return 'Please fill in your educational qualifications.';
+      if (form.tier === 'PSYCHOLOGIST' && !form.rciRegistrationNo) return 'RCI registration number is required for psychologists.';
+      if (form.tier === 'PSYCHIATRIST' && !form.nmcRegistrationNo) return 'NMC registration number is required for psychiatrists.';
+    }
+    return null;
+  };
+
   const handleSubmit = async () => {
+    const validationError = validateForm();
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
     setLoading(true);
     setError('');
     const res = await fetch('/api/provider-apply', {
@@ -128,12 +149,23 @@ export default function ProviderApplyPage() {
         <p className="mt-2 text-text-light">
           Thank you for applying. Our team will review your application and get back to you within 2-3 business days.
         </p>
-        <button
-          onClick={() => router.push('/dashboard')}
-          className="mt-6 rounded-xl bg-primary px-6 py-2.5 text-sm font-semibold text-white hover:bg-primary-dark"
-        >
-          Go to Dashboard
-        </button>
+        <p className="mt-2 text-sm text-text-light">
+          Please log out and log back in to access your provider dashboard.
+        </p>
+        <div className="mt-6 flex gap-3 justify-center">
+          <button
+            onClick={() => signOut({ callbackUrl: '/login' })}
+            className="rounded-xl bg-primary px-6 py-2.5 text-sm font-semibold text-white hover:bg-primary-dark"
+          >
+            Log Out & Sign In Again
+          </button>
+          <button
+            onClick={() => router.push('/dashboard')}
+            className="rounded-xl border border-gray-200 px-6 py-2.5 text-sm font-medium text-text-light hover:bg-gray-50"
+          >
+            Stay on Dashboard
+          </button>
+        </div>
       </div>
     );
   }

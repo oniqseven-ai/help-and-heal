@@ -23,6 +23,17 @@ export async function POST(req: Request) {
       );
     }
 
+    // Validate required fields
+    if (!data.fullName || !data.displayName || !data.phone || !data.tier) {
+      return NextResponse.json({ success: false, error: 'Missing required fields' }, { status: 400 });
+    }
+    if (!data.specialties?.length || !data.languages?.length) {
+      return NextResponse.json({ success: false, error: 'Specialties and languages are required' }, { status: 400 });
+    }
+    if (!data.requestedRate || data.requestedRate <= 0) {
+      return NextResponse.json({ success: false, error: 'A valid rate per minute is required' }, { status: 400 });
+    }
+
     const checklistDefs = getChecklistForTier(data.tier);
 
     const application = await prisma.providerApplication.create({
