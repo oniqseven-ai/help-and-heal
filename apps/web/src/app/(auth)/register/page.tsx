@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { signIn } from 'next-auth/react';
 import { Eye, EyeOff, Phone, User } from 'lucide-react';
 
 export default function RegisterPage() {
@@ -20,15 +21,35 @@ export default function RegisterPage() {
     setLoading(true);
     setError('');
 
-    // Mock registration — will be replaced with NextAuth
-    setTimeout(() => {
-      if (phone && password) {
-        router.push('/dashboard');
-      } else {
-        setError('Please fill in the required fields.');
-        setLoading(false);
-      }
-    }, 800);
+    // Register
+    const res = await fetch('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, phone, password, language }),
+    });
+
+    const data = await res.json();
+
+    if (!data.success) {
+      setError(data.error || 'Registration failed');
+      setLoading(false);
+      return;
+    }
+
+    // Auto-login after registration
+    const result = await signIn('credentials', {
+      phone,
+      password,
+      redirect: false,
+    });
+
+    if (result?.error) {
+      setError('Account created but login failed. Please sign in manually.');
+      setLoading(false);
+    } else {
+      router.push('/dashboard');
+      router.refresh();
+    }
   };
 
   return (
@@ -75,7 +96,7 @@ export default function RegisterPage() {
               id="phone"
               type="tel"
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
               placeholder="Enter your phone number"
               required
               className="w-full rounded-xl border border-gray-200 bg-background py-3 pl-14 pr-12 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
@@ -94,8 +115,9 @@ export default function RegisterPage() {
               type={showPassword ? 'text' : 'password'}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Create a password"
+              placeholder="Create a password (min 6 characters)"
               required
+              minLength={6}
               className="w-full rounded-xl border border-gray-200 bg-background py-3 pl-4 pr-12 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
             />
             <button

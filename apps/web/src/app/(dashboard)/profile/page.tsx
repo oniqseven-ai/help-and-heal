@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useSession, signOut } from 'next-auth/react';
 import {
   User,
   Phone,
@@ -16,7 +17,8 @@ import {
 } from 'lucide-react';
 
 export default function ProfilePage() {
-  const [name, setName] = useState('Hardik');
+  const { data: session } = useSession();
+  const [name, setName] = useState(session?.user?.name || '');
   const [language, setLanguage] = useState<'en' | 'hi'>('en');
   const [notifications, setNotifications] = useState(true);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -33,7 +35,9 @@ export default function ProfilePage() {
           </div>
           <div>
             <h2 className="text-lg font-bold">{name}</h2>
-            <p className="text-sm text-text-light">+91 ****1234</p>
+            <p className="text-sm text-text-light">
+              +91 ****{(session?.user as { phone?: string })?.phone?.slice(-4) || '****'}
+            </p>
           </div>
         </div>
 
@@ -132,13 +136,13 @@ export default function ProfilePage() {
 
       {/* Danger zone */}
       <div className="mt-6 space-y-3">
-        <Link
-          href="/login"
+        <button
+          onClick={() => signOut({ callbackUrl: '/login' })}
           className="flex w-full items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white py-3 text-sm font-semibold text-text-light hover:bg-gray-50"
         >
           <LogOut className="h-4 w-4" />
           Log Out
-        </Link>
+        </button>
 
         <button
           onClick={() => setShowDeleteConfirm(true)}

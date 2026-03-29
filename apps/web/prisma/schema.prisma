@@ -1,0 +1,165 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Language {
+  en
+  hi
+  ta
+  te
+  bn
+  mr
+  kn
+  ml
+}
+
+enum ProviderTier {
+  LISTENER
+  COUNSELOR
+  PSYCHOLOGIST
+  PSYCHIATRIST
+}
+
+enum SessionType {
+  AUDIO
+  CHAT
+  VIDEO
+}
+
+enum SessionStatus {
+  WAITING
+  ACTIVE
+  COMPLETED
+  CANCELLED
+  ESCALATED
+}
+
+enum TransactionType {
+  RECHARGE
+  SESSION_DEBIT
+  REFUND
+  BONUS
+}
+
+model User {
+  id                 String    @id @default(uuid())
+  phone              String?   @unique
+  email              String?   @unique
+  passwordHash       String?
+  name               String?
+  languagePreference Language  @default(en)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  wallet   Wallet?
+  provider Provider?
+  sessions Session[]  @relation("UserSessions")
+  ratings  Rating[]
+
+  @@map("users")
+}
+
+model Provider {
+  id            String       @id @default(uuid())
+  userId        String       @unique
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tier          ProviderTier
+  displayName   String
+  bio           String
+  specialties   String[]
+  languages     String[]
+  ratePerMinute Int
+  isOnline      Boolean      @default(false)
+  isVerified    Boolean      @default(false)
+  ratingAvg     Float        @default(0)
+  totalSessions Int          @default(0)
+  totalMinutes  Int          @default(0)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  sessions Session[] @relation("ProviderSessions")
+  ratings  Rating[]
+
+  @@map("providers")
+}
+
+model Wallet {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  balance   Int      @default(0)
+  updatedAt DateTime @updatedAt
+
+  transactions WalletTransaction[]
+
+  @@map("wallets")
+}
+
+model WalletTransaction {
+  id                String          @id @default(uuid())
+  walletId          String
+  wallet            Wallet          @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  type              TransactionType
+  amount            Int
+  description       String          @default("")
+  razorpayPaymentId String?
+  sessionId         String?
+  createdAt         DateTime        @default(now())
+
+  @@map("wallet_transactions")
+}
+
+model Session {
+  id              String        @id @default(uuid())
+  userId          String
+  user            User          @relation("UserSessions", fields: [userId], references: [id], onDelete: Cascade)
+  providerId      String
+  provider        Provider      @relation("ProviderSessions", fields: [providerId], references: [id], onDelete: Cascade)
+  type            SessionType
+  status          SessionStatus @default(WAITING)
+  startedAt       DateTime?
+  endedAt         DateTime?
+  durationSeconds Int           @default(0)
+  ratePerMinute   Int
+  totalCharged    Int           @default(0)
+  isFreeTrial     Boolean       @default(false)
+  moodBefore      Int?
+  moodAfter       Int?
+  createdAt       DateTime      @default(now())
+
+  rating   Rating?
+  messages SessionMessage[]
+
+  @@map("sessions")
+}
+
+model SessionMessage {
+  id         String   @id @default(uuid())
+  sessionId  String
+  session    Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  senderType String
+  content    String
+  createdAt  DateTime @default(now())
+
+  @@map("session_messages")
+}
+
+model Rating {
+  id         String   @id @default(uuid())
+  sessionId  String   @unique
+  session    Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  providerId String
+  provider   Provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  score      Int
+  feedback   String?
+  createdAt  DateTime @default(now())
+
+  @@map("ratings")
+}

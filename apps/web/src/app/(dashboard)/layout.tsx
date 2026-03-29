@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useSession, signOut } from 'next-auth/react';
 import {
   Home,
   Users,
@@ -13,8 +14,8 @@ import {
   Menu,
   X,
 } from 'lucide-react';
-import { useState } from 'react';
-import { MOCK_WALLET_BALANCE, formatPaise } from '@/lib/mock-data';
+import { useState, useEffect } from 'react';
+import { formatPaise } from '@/lib/mock-data';
 
 const NAV_ITEMS = [
   { href: '/dashboard', label: 'Home', icon: Home },
@@ -35,7 +36,19 @@ const BOTTOM_NAV = [
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const { data: session } = useSession();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [walletBalance, setWalletBalance] = useState(0);
+
+  useEffect(() => {
+    fetch('/api/wallet')
+      .then((r) => r.json())
+      .then((d) => { if (d.success) setWalletBalance(d.data.balance); })
+      .catch(() => {});
+  }, [pathname]);
+
+  const userName = session?.user?.name || 'User';
+  const userInitial = userName.charAt(0).toUpperCase();
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -69,13 +82,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </nav>
 
           <div className="border-t border-gray-100 p-3">
-            <Link
-              href="/login"
-              className="flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium text-text-light hover:bg-gray-50 hover:text-error"
+            <button
+              onClick={() => signOut({ callbackUrl: '/login' })}
+              className="flex w-full items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium text-text-light hover:bg-gray-50 hover:text-error"
             >
               <LogOut className="h-5 w-5" />
               Logout
-            </Link>
+            </button>
           </div>
         </div>
       </aside>
@@ -138,13 +151,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               className="flex items-center gap-2 rounded-full bg-accent/10 px-4 py-2 text-sm font-semibold text-accent transition-colors hover:bg-accent/20"
             >
               <Wallet className="h-4 w-4" />
-              {formatPaise(MOCK_WALLET_BALANCE)}
+              {formatPaise(walletBalance)}
             </Link>
             <Link
               href="/profile"
               className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-sm font-semibold text-white"
             >
-              H
+              {userInitial}
             </Link>
           </div>
         </header>

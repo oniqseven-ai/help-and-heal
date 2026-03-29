@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useSession } from 'next-auth/react';
 import {
   Phone,
   Wallet,
@@ -10,13 +11,30 @@ import {
   Sparkles,
   Star,
 } from 'lucide-react';
-import {
-  MOCK_PROVIDERS,
-  MOCK_WALLET_BALANCE,
-  formatPaise,
-  tierLabel,
-  tierColor,
-} from '@/lib/mock-data';
+import { formatPaise } from '@/lib/mock-data';
+
+interface ProviderData {
+  id: string;
+  displayName: string;
+  tier: string;
+  specialties: string[];
+  languages: string[];
+  ratePerMinute: number;
+  isOnline: boolean;
+  ratingAvg: number;
+}
+
+const TIER_COLOR: Record<string, string> = {
+  LISTENER: 'bg-secondary/10 text-secondary-dark',
+  COUNSELOR: 'bg-primary/10 text-primary-dark',
+  PSYCHOLOGIST: 'bg-purple-100 text-purple-700',
+};
+
+const TIER_LABEL: Record<string, string> = {
+  LISTENER: 'Peer Listener',
+  COUNSELOR: 'Counselor',
+  PSYCHOLOGIST: 'Psychologist',
+};
 
 const MOODS = [
   { emoji: '😊', label: 'Great', value: 9 },
@@ -27,15 +45,28 @@ const MOODS = [
 ];
 
 export default function DashboardPage() {
+  const { data: session } = useSession();
   const [selectedMood, setSelectedMood] = useState<number | null>(null);
-  const onlineProviders = MOCK_PROVIDERS.filter((p) => p.isOnline);
+  const [providers, setProviders] = useState<ProviderData[]>([]);
+  const [walletBalance, setWalletBalance] = useState(0);
+
+  useEffect(() => {
+    fetch('/api/providers')
+      .then((r) => r.json())
+      .then((d) => { if (d.success) setProviders(d.data); });
+    fetch('/api/wallet')
+      .then((r) => r.json())
+      .then((d) => { if (d.success) setWalletBalance(d.data.balance); });
+  }, []);
+
+  const onlineProviders = providers.filter((p) => p.isOnline);
+  const userName = session?.user?.name || 'there';
 
   return (
     <div className="mx-auto max-w-5xl space-y-8">
-      {/* Welcome */}
       <div>
         <h1 className="text-2xl font-bold md:text-3xl">
-          Welcome back 👋
+          Welcome back, {userName} 👋
         </h1>
         <p className="mt-1 text-text-light">
           How are you feeling today? We&apos;re here for you.
@@ -53,7 +84,7 @@ export default function DashboardPage() {
           </div>
           <div>
             <p className="text-sm text-text-light">Wallet Balance</p>
-            <p className="text-xl font-bold">{formatPaise(MOCK_WALLET_BALANCE)}</p>
+            <p className="text-xl font-bold">{formatPaise(walletBalance)}</p>
           </div>
         </Link>
 
@@ -62,8 +93,8 @@ export default function DashboardPage() {
             <TrendingUp className="h-6 w-6 text-secondary" />
           </div>
           <div>
-            <p className="text-sm text-text-light">Sessions This Month</p>
-            <p className="text-xl font-bold">3</p>
+            <p className="text-sm text-text-light">Providers Available</p>
+            <p className="text-xl font-bold">{providers.length}</p>
           </div>
         </div>
 
@@ -72,7 +103,7 @@ export default function DashboardPage() {
             <Sparkles className="h-6 w-6 text-primary" />
           </div>
           <div>
-            <p className="text-sm text-text-light">Providers Online</p>
+            <p className="text-sm text-text-light">Online Now</p>
             <p className="text-xl font-bold">{onlineProviders.length}</p>
           </div>
         </div>
@@ -127,54 +158,55 @@ export default function DashboardPage() {
           </Link>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {onlineProviders.slice(0, 6).map((provider) => (
-            <Link
-              key={provider.id}
-              href={`/providers/${provider.id}`}
-              className="group rounded-2xl border border-gray-100 bg-white p-5 transition-all hover:border-primary/20 hover:shadow-md"
-            >
-              <div className="flex items-start gap-3">
-                <div
-                  className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white"
-                  style={{ backgroundColor: provider.color }}
-                >
-                  {provider.initials}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <h3 className="font-semibold leading-tight">{provider.displayName}</h3>
-                  <div className="mt-1 flex items-center gap-2">
-                    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${tierColor(provider.tier)}`}>
-                      {tierLabel(provider.tier)}
-                    </span>
-                    <span className="flex items-center gap-0.5 text-xs text-text-light">
-                      <Star className="h-3 w-3 fill-accent text-accent" />
-                      {provider.ratingAvg}
-                    </span>
+        {onlineProviders.length === 0 ? (
+          <p className="text-sm text-text-light">Loading providers...</p>
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {onlineProviders.slice(0, 6).map((provider) => (
+              <Link
+                key={provider.id}
+                href={`/providers/${provider.id}`}
+                className="group rounded-2xl border border-gray-100 bg-white p-5 transition-all hover:border-primary/20 hover:shadow-md"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-white">
+                    {provider.displayName.split(' ').map((n) => n[0]).join('').slice(0, 2)}
                   </div>
-                </div>
-                <div className="relative">
-                  <span className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full border-2 border-white bg-secondary" />
-                </div>
-              </div>
-              <div className="mt-3 flex flex-wrap gap-1">
-                {provider.specialties.slice(0, 3).map((s) => (
-                  <span key={s} className="rounded-full bg-background px-2 py-0.5 text-xs text-text-light">
-                    {s}
+                  <div className="min-w-0 flex-1">
+                    <h3 className="font-semibold leading-tight">{provider.displayName}</h3>
+                    <div className="mt-1 flex items-center gap-2">
+                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${TIER_COLOR[provider.tier] || ''}`}>
+                        {TIER_LABEL[provider.tier] || provider.tier}
+                      </span>
+                      <span className="flex items-center gap-0.5 text-xs text-text-light">
+                        <Star className="h-3 w-3 fill-accent text-accent" />
+                        {provider.ratingAvg}
+                      </span>
+                    </div>
+                  </div>
+                  <span className="relative h-3 w-3">
+                    <span className="absolute inset-0 rounded-full bg-secondary" />
                   </span>
-                ))}
-              </div>
-              <div className="mt-3 flex items-center justify-between">
-                <span className="text-sm font-semibold text-primary">
-                  {formatPaise(provider.ratePerMinute)}/min
-                </span>
-                <span className="text-xs text-text-light">
-                  {provider.languages.join(', ')}
-                </span>
-              </div>
-            </Link>
-          ))}
-        </div>
+                </div>
+                <div className="mt-3 flex flex-wrap gap-1">
+                  {provider.specialties.slice(0, 3).map((s) => (
+                    <span key={s} className="rounded-full bg-background px-2 py-0.5 text-xs text-text-light">
+                      {s}
+                    </span>
+                  ))}
+                </div>
+                <div className="mt-3 flex items-center justify-between">
+                  <span className="text-sm font-semibold text-primary">
+                    {formatPaise(provider.ratePerMinute)}/min
+                  </span>
+                  <span className="text-xs text-text-light">
+                    {provider.languages.join(', ')}
+                  </span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
