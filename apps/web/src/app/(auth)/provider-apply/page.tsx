@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useSession, signOut } from 'next-auth/react';
+import { useSession, signIn, signOut } from 'next-auth/react';
 import {
   ArrowLeft,
   ArrowRight,
@@ -11,6 +11,9 @@ import {
   Briefcase,
   FileText,
   ShieldCheck,
+  Eye,
+  EyeOff,
+  Phone,
 } from 'lucide-react';
 import { TIER_RATE_RANGES } from '@/lib/compliance';
 
@@ -23,22 +26,38 @@ const SPECIALTIES = [
 
 const LANGUAGES = ['Hindi', 'English', 'Tamil', 'Telugu', 'Bengali', 'Marathi', 'Kannada', 'Malayalam'];
 
-const STEPS = [
-  { label: 'Personal', icon: User },
-  { label: 'Professional', icon: Briefcase },
-  { label: 'Documents', icon: FileText },
-  { label: 'Agreements', icon: ShieldCheck },
-];
-
 type Tier = 'LISTENER' | 'COUNSELOR' | 'PSYCHOLOGIST' | 'PSYCHIATRIST';
 
 export default function ProviderApplyPage() {
   const router = useRouter();
-  const { data: session } = useSession();
+  const { data: session, status: authStatus } = useSession();
+  const isLoggedIn = authStatus === 'authenticated';
+
+  // Steps change based on login status
+  const STEPS = isLoggedIn
+    ? [
+        { label: 'Personal', icon: User },
+        { label: 'Professional', icon: Briefcase },
+        { label: 'Documents', icon: FileText },
+        { label: 'Agreements', icon: ShieldCheck },
+      ]
+    : [
+        { label: 'Account', icon: Phone },
+        { label: 'Personal', icon: User },
+        { label: 'Professional', icon: Briefcase },
+        { label: 'Documents', icon: FileText },
+        { label: 'Agreements', icon: ShieldCheck },
+      ];
+
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+
+  // Account fields (for non-logged-in users)
+  const [regPhone, setRegPhone] = useState('');
+  const [regPassword, setRegPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   const [form, setForm] = useState({
     fullName: session?.user?.name || '',
@@ -74,48 +93,113 @@ export default function ProviderApplyPage() {
   const toggleSpecialty = (s: string) => {
     setForm((f) => ({
       ...f,
-      specialties: f.specialties.includes(s)
-        ? f.specialties.filter((x) => x !== s)
-        : [...f.specialties, s],
+      specialties: f.specialties.includes(s) ? f.specialties.filter((x) => x !== s) : [...f.specialties, s],
     }));
   };
   const toggleLanguage = (l: string) => {
     setForm((f) => ({
       ...f,
-      languages: f.languages.includes(l)
-        ? f.languages.filter((x) => x !== l)
-        : [...f.languages, l],
+      languages: f.languages.includes(l) ? f.languages.filter((x) => x !== l) : [...f.languages, l],
     }));
   };
 
-  const validateForm = (): string | null => {
-    if (!form.fullName || !form.displayName || !form.phone) return 'Please fill in all required personal fields.';
-    if (!form.tier) return 'Please select a provider tier.';
-    if (!form.bio) return 'Please write a bio.';
-    if (form.specialties.length === 0) return 'Please select at least one specialty.';
-    if (form.languages.length === 0) return 'Please select at least one language.';
-    if (form.requestedRate <= 0) return 'Please enter a valid rate per minute.';
-    if (form.tier !== 'LISTENER') {
-      if (!form.highestDegree || !form.university) return 'Please fill in your educational qualifications.';
-      if (form.tier === 'PSYCHOLOGIST' && !form.rciRegistrationNo) return 'RCI registration number is required for psychologists.';
-      if (form.tier === 'PSYCHIATRIST' && !form.nmcRegistrationNo) return 'NMC registration number is required for psychiatrists.';
+  // Get the actual step content based on whether user is logged in
+  const getStepType = () => {
+    if (isLoggedIn) {
+      return ['personal', 'professional', 'documents', 'agreements'][step];
+    }
+    return ['account', 'personal', 'professional', 'documents', 'agreements'][step];
+  };
+
+  const stepType = getStepType();
+  const totalSteps = STEPS.length;
+  const isLastStep = step === totalSteps - 1;
+
+  const validateStep = (): string | null => {
+    if (stepType === 'account') {
+      if (!regPhone || regPhone.length !== 10) return 'Please enter a valid 10-digit phone number.';
+      if (!regPassword || regPassword.length < 6) return 'Password must be at least 6 characters.';
+    }
+    if (stepType === 'personal') {
+      if (!form.fullName) return 'Full name is required.';
+      if (!form.displayName) return 'Display name is required.';
+    }
+    if (stepType === 'professional') {
+      if (!form.tier) return 'Please select a provider tier.';
+      if (!form.bio) return 'Please write a bio.';
+      if (form.specialties.length === 0) return 'Please select at least one specialty.';
+      if (form.languages.length === 0) return 'Please select at least one language.';
+      if (form.requestedRate <= 0) return 'Please enter a valid rate per minute.';
+    }
+    if (stepType === 'documents' && form.tier !== 'LISTENER') {
+      if (!form.highestDegree) return 'Highest degree is required.';
+      if (!form.university) return 'University is required.';
+      if (form.tier === 'PSYCHOLOGIST' && !form.rciRegistrationNo) return 'RCI registration number is required.';
+      if (form.tier === 'PSYCHIATRIST' && !form.nmcRegistrationNo) return 'NMC registration number is required.';
     }
     return null;
   };
 
+  const handleNext = async () => {
+    const validationError = validateStep();
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+    setError('');
+
+    // If on account step, register + login first
+    if (stepType === 'account') {
+      setLoading(true);
+      const regRes = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: form.fullName || 'Provider', phone: regPhone, password: regPassword }),
+      });
+      const regData = await regRes.json();
+      if (!regData.success) {
+        setError(regData.error || 'Registration failed');
+        setLoading(false);
+        return;
+      }
+
+      // Auto-login
+      const loginResult = await signIn('credentials', { phone: regPhone, password: regPassword, redirect: false });
+      if (loginResult?.error) {
+        setError('Account created but login failed. Please try logging in manually.');
+        setLoading(false);
+        return;
+      }
+
+      // Set phone in form
+      update('phone', regPhone);
+      setLoading(false);
+    }
+
+    setStep(step + 1);
+  };
+
   const handleSubmit = async () => {
-    const validationError = validateForm();
+    const validationError = validateStep();
     if (validationError) {
       setError(validationError);
       return;
     }
 
+    if (!form.codeOfEthicsAgreed || !form.dpdpConsentAgreed || !form.termsAgreed) {
+      setError('Please agree to all terms before submitting.');
+      return;
+    }
+
     setLoading(true);
     setError('');
+
+    const submitForm = { ...form, phone: form.phone || regPhone };
+
     const res = await fetch('/api/provider-apply', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
+      body: JSON.stringify(submitForm),
     });
     const data = await res.json();
     if (data.success) {
@@ -126,15 +210,12 @@ export default function ProviderApplyPage() {
     setLoading(false);
   };
 
-  if (!session) {
+  const tierInfo = form.tier ? TIER_RATE_RANGES[form.tier] : null;
+
+  if (authStatus === 'loading') {
     return (
       <div className="rounded-2xl border border-gray-100 bg-white p-8 text-center shadow-sm">
-        <h1 className="text-2xl font-bold">Become a Provider</h1>
-        <p className="mt-2 text-text-light">Please log in or create an account first to apply.</p>
-        <div className="mt-6 flex gap-3 justify-center">
-          <a href="/login" className="rounded-xl bg-primary px-6 py-2.5 text-sm font-semibold text-white hover:bg-primary-dark">Log In</a>
-          <a href="/register" className="rounded-xl border border-primary px-6 py-2.5 text-sm font-semibold text-primary hover:bg-primary/5">Register</a>
-        </div>
+        <p className="text-text-light">Loading...</p>
       </div>
     );
   }
@@ -152,7 +233,7 @@ export default function ProviderApplyPage() {
         <p className="mt-2 text-sm text-text-light">
           Please log out and log back in to access your provider dashboard.
         </p>
-        <div className="mt-6 flex gap-3 justify-center">
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
           <button
             onClick={() => signOut({ callbackUrl: '/login' })}
             className="rounded-xl bg-primary px-6 py-2.5 text-sm font-semibold text-white hover:bg-primary-dark"
@@ -170,62 +251,96 @@ export default function ProviderApplyPage() {
     );
   }
 
-  const tierInfo = form.tier ? TIER_RATE_RANGES[form.tier] : null;
-
   return (
     <div className="rounded-2xl border border-gray-100 bg-white shadow-sm">
       {/* Header */}
-      <div className="border-b border-gray-100 p-6">
+      <div className="border-b border-gray-100 p-4 sm:p-6">
         <h1 className="text-xl font-bold">Become a Provider</h1>
         <p className="mt-1 text-sm text-text-light">Join our team of mental health professionals</p>
 
         {/* Steps */}
-        <div className="mt-4 flex gap-2">
+        <div className="mt-4 flex gap-1.5 sm:gap-2">
           {STEPS.map((s, i) => (
-            <div key={i} className={`flex flex-1 items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium ${
+            <div key={i} className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-xs font-medium ${
               i === step ? 'bg-primary/10 text-primary' : i < step ? 'bg-secondary/10 text-secondary' : 'bg-gray-50 text-text-light'
             }`}>
-              <s.icon className="h-4 w-4" />
+              <s.icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               <span className="hidden sm:inline">{s.label}</span>
             </div>
           ))}
         </div>
       </div>
 
-      {error && <div className="mx-6 mt-4 rounded-lg bg-error/10 p-3 text-sm text-error">{error}</div>}
+      {error && <div className="mx-4 mt-4 rounded-lg bg-error/10 p-3 text-sm text-error sm:mx-6">{error}</div>}
 
-      <div className="p-6">
-        {/* Step 0: Personal */}
-        {step === 0 && (
+      <div className="p-4 sm:p-6">
+        {/* Account Step (only for non-logged-in users) */}
+        {stepType === 'account' && (
+          <div className="space-y-4">
+            <div className="rounded-xl bg-primary/5 p-4">
+              <p className="text-sm font-medium text-primary">Create your account first</p>
+              <p className="mt-1 text-xs text-text-light">We&apos;ll create your Help&Heal account, then you&apos;ll fill in your provider details.</p>
+            </div>
+
+            <div>
+              <label className="mb-1.5 block text-sm font-medium">Your name</label>
+              <input value={form.fullName} onChange={(e) => update('fullName', e.target.value)} placeholder="Full name"
+                className="w-full rounded-xl border border-gray-200 bg-background px-4 py-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
+            </div>
+
+            <div>
+              <label className="mb-1.5 block text-sm font-medium">Phone number *</label>
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-text-light">+91</span>
+                <Phone className="absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                <input value={regPhone} onChange={(e) => setRegPhone(e.target.value.replace(/\D/g, ''))} maxLength={10} placeholder="10-digit phone number"
+                  className="w-full rounded-xl border border-gray-200 bg-background py-3 pl-14 pr-12 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
+              </div>
+            </div>
+
+            <div>
+              <label className="mb-1.5 block text-sm font-medium">Create password *</label>
+              <div className="relative">
+                <input type={showPassword ? 'text' : 'password'} value={regPassword} onChange={(e) => setRegPassword(e.target.value)} placeholder="Min 6 characters"
+                  className="w-full rounded-xl border border-gray-200 bg-background py-3 pl-4 pr-12 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+
+            <p className="text-xs text-text-light">
+              Already have an account?{' '}
+              <a href="/login" className="font-semibold text-primary hover:underline">Log in first</a>, then come back here.
+            </p>
+          </div>
+        )}
+
+        {/* Personal Step */}
+        {stepType === 'personal' && (
           <div className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <label className="mb-1.5 block text-sm font-medium">Full name *</label>
-                <input value={form.fullName} onChange={(e) => update('fullName', e.target.value)} className="w-full rounded-xl border border-gray-200 bg-background px-4 py-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
+                <input value={form.fullName} onChange={(e) => update('fullName', e.target.value)}
+                  className="w-full rounded-xl border border-gray-200 bg-background px-4 py-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
               </div>
               <div>
                 <label className="mb-1.5 block text-sm font-medium">Display name *</label>
-                <input value={form.displayName} onChange={(e) => update('displayName', e.target.value)} placeholder="Name shown to users" className="w-full rounded-xl border border-gray-200 bg-background px-4 py-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
+                <input value={form.displayName} onChange={(e) => update('displayName', e.target.value)} placeholder="Name shown to users"
+                  className="w-full rounded-xl border border-gray-200 bg-background px-4 py-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
               </div>
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <label className="mb-1.5 block text-sm font-medium">Phone *</label>
-                <input value={form.phone} onChange={(e) => update('phone', e.target.value.replace(/\D/g, ''))} maxLength={10} className="w-full rounded-xl border border-gray-200 bg-background px-4 py-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
-              </div>
               <div>
                 <label className="mb-1.5 block text-sm font-medium">Email</label>
-                <input type="email" value={form.email} onChange={(e) => update('email', e.target.value)} className="w-full rounded-xl border border-gray-200 bg-background px-4 py-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
-              </div>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <label className="mb-1.5 block text-sm font-medium">Date of birth</label>
-                <input type="date" value={form.dateOfBirth} onChange={(e) => update('dateOfBirth', e.target.value)} className="w-full rounded-xl border border-gray-200 bg-background px-4 py-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
+                <input type="email" value={form.email} onChange={(e) => update('email', e.target.value)}
+                  className="w-full rounded-xl border border-gray-200 bg-background px-4 py-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
               </div>
               <div>
                 <label className="mb-1.5 block text-sm font-medium">Gender</label>
-                <select value={form.gender} onChange={(e) => update('gender', e.target.value)} className="w-full rounded-xl border border-gray-200 bg-background px-4 py-3 text-sm outline-none focus:border-primary">
+                <select value={form.gender} onChange={(e) => update('gender', e.target.value)}
+                  className="w-full rounded-xl border border-gray-200 bg-background px-4 py-3 text-sm outline-none focus:border-primary">
                   <option value="">Select</option>
                   <option value="male">Male</option>
                   <option value="female">Female</option>
@@ -234,11 +349,16 @@ export default function ProviderApplyPage() {
                 </select>
               </div>
             </div>
+            <div>
+              <label className="mb-1.5 block text-sm font-medium">Date of birth</label>
+              <input type="date" value={form.dateOfBirth} onChange={(e) => update('dateOfBirth', e.target.value)}
+                className="w-full rounded-xl border border-gray-200 bg-background px-4 py-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
+            </div>
           </div>
         )}
 
-        {/* Step 1: Professional */}
-        {step === 1 && (
+        {/* Professional Step */}
+        {stepType === 'professional' && (
           <div className="space-y-4">
             <div>
               <label className="mb-1.5 block text-sm font-medium">Provider tier *</label>
@@ -254,10 +374,11 @@ export default function ProviderApplyPage() {
             </div>
             <div>
               <label className="mb-1.5 block text-sm font-medium">Bio *</label>
-              <textarea value={form.bio} onChange={(e) => update('bio', e.target.value)} rows={4} placeholder="Tell users about yourself, your approach, and experience..." className="w-full rounded-xl border border-gray-200 bg-background px-4 py-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
+              <textarea value={form.bio} onChange={(e) => update('bio', e.target.value)} rows={4} placeholder="Tell users about yourself, your approach, and experience..."
+                className="w-full rounded-xl border border-gray-200 bg-background px-4 py-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
             </div>
             <div>
-              <label className="mb-1.5 block text-sm font-medium">Specialties * (select all that apply)</label>
+              <label className="mb-1.5 block text-sm font-medium">Specialties *</label>
               <div className="flex flex-wrap gap-2">
                 {SPECIALTIES.map((s) => (
                   <button key={s} type="button" onClick={() => toggleSpecialty(s)}
@@ -281,30 +402,34 @@ export default function ProviderApplyPage() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <label className="mb-1.5 block text-sm font-medium">
-                  Rate per minute (₹) * {tierInfo && <span className="text-text-light font-normal">Range: {tierInfo.label}</span>}
+                  Rate per minute (₹) * {tierInfo && <span className="text-text-light font-normal text-xs">Range: {tierInfo.label}</span>}
                 </label>
-                <input type="number" value={form.requestedRate / 100 || ''} onChange={(e) => update('requestedRate', parseInt(e.target.value || '0') * 100)} placeholder="e.g. 10" className="w-full rounded-xl border border-gray-200 bg-background px-4 py-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
+                <input type="number" value={form.requestedRate / 100 || ''} onChange={(e) => update('requestedRate', parseInt(e.target.value || '0') * 100)} placeholder="e.g. 10"
+                  className="w-full rounded-xl border border-gray-200 bg-background px-4 py-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
               </div>
               <div>
                 <label className="mb-1.5 block text-sm font-medium">Years of experience</label>
-                <input type="number" value={form.yearsExperience || ''} onChange={(e) => update('yearsExperience', parseInt(e.target.value || '0'))} className="w-full rounded-xl border border-gray-200 bg-background px-4 py-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
+                <input type="number" value={form.yearsExperience || ''} onChange={(e) => update('yearsExperience', parseInt(e.target.value || '0'))}
+                  className="w-full rounded-xl border border-gray-200 bg-background px-4 py-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
               </div>
             </div>
           </div>
         )}
 
-        {/* Step 2: Documents */}
-        {step === 2 && (
+        {/* Documents Step */}
+        {stepType === 'documents' && (
           <div className="space-y-4">
             <h3 className="font-semibold">Identity Verification</h3>
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <label className="mb-1.5 block text-sm font-medium">Aadhaar number</label>
-                <input value={form.aadhaarNumber} onChange={(e) => update('aadhaarNumber', e.target.value.replace(/\D/g, ''))} maxLength={12} placeholder="12-digit Aadhaar" className="w-full rounded-xl border border-gray-200 bg-background px-4 py-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
+                <input value={form.aadhaarNumber} onChange={(e) => update('aadhaarNumber', e.target.value.replace(/\D/g, ''))} maxLength={12} placeholder="12-digit Aadhaar"
+                  className="w-full rounded-xl border border-gray-200 bg-background px-4 py-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
               </div>
               <div>
                 <label className="mb-1.5 block text-sm font-medium">PAN number</label>
-                <input value={form.panNumber} onChange={(e) => update('panNumber', e.target.value.toUpperCase())} maxLength={10} placeholder="ABCDE1234F" className="w-full rounded-xl border border-gray-200 bg-background px-4 py-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
+                <input value={form.panNumber} onChange={(e) => update('panNumber', e.target.value.toUpperCase())} maxLength={10} placeholder="ABCDE1234F"
+                  className="w-full rounded-xl border border-gray-200 bg-background px-4 py-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
               </div>
             </div>
 
@@ -314,43 +439,45 @@ export default function ProviderApplyPage() {
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
                     <label className="mb-1.5 block text-sm font-medium">Highest degree *</label>
-                    <input value={form.highestDegree} onChange={(e) => update('highestDegree', e.target.value)} placeholder="e.g. M.A. Psychology" className="w-full rounded-xl border border-gray-200 bg-background px-4 py-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
+                    <input value={form.highestDegree} onChange={(e) => update('highestDegree', e.target.value)} placeholder="e.g. M.A. Psychology"
+                      className="w-full rounded-xl border border-gray-200 bg-background px-4 py-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
                   </div>
                   <div>
                     <label className="mb-1.5 block text-sm font-medium">University/Institution *</label>
-                    <input value={form.university} onChange={(e) => update('university', e.target.value)} className="w-full rounded-xl border border-gray-200 bg-background px-4 py-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
+                    <input value={form.university} onChange={(e) => update('university', e.target.value)}
+                      className="w-full rounded-xl border border-gray-200 bg-background px-4 py-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
                   </div>
                 </div>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
                     <label className="mb-1.5 block text-sm font-medium">Graduation year</label>
-                    <input type="number" value={form.graduationYear} onChange={(e) => update('graduationYear', e.target.value)} placeholder="e.g. 2018" className="w-full rounded-xl border border-gray-200 bg-background px-4 py-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
+                    <input type="number" value={form.graduationYear} onChange={(e) => update('graduationYear', e.target.value)} placeholder="e.g. 2018"
+                      className="w-full rounded-xl border border-gray-200 bg-background px-4 py-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
                   </div>
                   <div>
                     <label className="mb-1.5 block text-sm font-medium">Degree certificate number</label>
-                    <input value={form.degreeCertNumber} onChange={(e) => update('degreeCertNumber', e.target.value)} className="w-full rounded-xl border border-gray-200 bg-background px-4 py-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
+                    <input value={form.degreeCertNumber} onChange={(e) => update('degreeCertNumber', e.target.value)}
+                      className="w-full rounded-xl border border-gray-200 bg-background px-4 py-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
                   </div>
                 </div>
               </>
             )}
 
             {form.tier === 'PSYCHOLOGIST' && (
-              <div>
-                <h3 className="font-semibold mt-6">RCI Registration</h3>
-                <div className="mt-2">
-                  <label className="mb-1.5 block text-sm font-medium">RCI registration number *</label>
-                  <input value={form.rciRegistrationNo} onChange={(e) => update('rciRegistrationNo', e.target.value)} className="w-full rounded-xl border border-gray-200 bg-background px-4 py-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
-                </div>
+              <div className="mt-4">
+                <h3 className="font-semibold">RCI Registration</h3>
+                <label className="mt-2 mb-1.5 block text-sm font-medium">RCI registration number *</label>
+                <input value={form.rciRegistrationNo} onChange={(e) => update('rciRegistrationNo', e.target.value)}
+                  className="w-full rounded-xl border border-gray-200 bg-background px-4 py-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
               </div>
             )}
 
             {form.tier === 'PSYCHIATRIST' && (
-              <div>
-                <h3 className="font-semibold mt-6">NMC Registration</h3>
-                <div className="mt-2">
-                  <label className="mb-1.5 block text-sm font-medium">NMC registration number *</label>
-                  <input value={form.nmcRegistrationNo} onChange={(e) => update('nmcRegistrationNo', e.target.value)} className="w-full rounded-xl border border-gray-200 bg-background px-4 py-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
-                </div>
+              <div className="mt-4">
+                <h3 className="font-semibold">NMC Registration</h3>
+                <label className="mt-2 mb-1.5 block text-sm font-medium">NMC registration number *</label>
+                <input value={form.nmcRegistrationNo} onChange={(e) => update('nmcRegistrationNo', e.target.value)}
+                  className="w-full rounded-xl border border-gray-200 bg-background px-4 py-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
               </div>
             )}
 
@@ -358,25 +485,22 @@ export default function ProviderApplyPage() {
               <div className="mt-4">
                 <h3 className="font-semibold">Professional Indemnity Insurance</h3>
                 <label className="mt-2 flex items-center gap-3">
-                  <input type="checkbox" checked={form.hasIndemnityInsurance} onChange={(e) => update('hasIndemnityInsurance', e.target.checked)} className="h-4 w-4 rounded border-gray-300 text-primary" />
+                  <input type="checkbox" checked={form.hasIndemnityInsurance} onChange={(e) => update('hasIndemnityInsurance', e.target.checked)} className="h-5 w-5 rounded border-gray-300 text-primary" />
                   <span className="text-sm">I have professional indemnity insurance</span>
                 </label>
                 {form.hasIndemnityInsurance && (
-                  <div className="mt-2">
-                    <input value={form.insurancePolicyNumber} onChange={(e) => update('insurancePolicyNumber', e.target.value)} placeholder="Policy number" className="w-full rounded-xl border border-gray-200 bg-background px-4 py-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
-                  </div>
+                  <input value={form.insurancePolicyNumber} onChange={(e) => update('insurancePolicyNumber', e.target.value)} placeholder="Policy number"
+                    className="mt-2 w-full rounded-xl border border-gray-200 bg-background px-4 py-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
                 )}
               </div>
             )}
           </div>
         )}
 
-        {/* Step 3: Agreements */}
-        {step === 3 && (
-          <div className="space-y-5">
-            <p className="text-sm text-text-light">
-              Please review and agree to the following before submitting your application.
-            </p>
+        {/* Agreements Step */}
+        {stepType === 'agreements' && (
+          <div className="space-y-4">
+            <p className="text-sm text-text-light">Please review and agree to the following before submitting.</p>
 
             <label className="flex items-start gap-3 rounded-xl border border-gray-100 p-4 hover:bg-gray-50 cursor-pointer">
               <input type="checkbox" checked={form.codeOfEthicsAgreed} onChange={(e) => update('codeOfEthicsAgreed', e.target.checked)} className="mt-0.5 h-5 w-5 rounded border-gray-300 text-primary" />
@@ -390,7 +514,7 @@ export default function ProviderApplyPage() {
               <input type="checkbox" checked={form.dpdpConsentAgreed} onChange={(e) => update('dpdpConsentAgreed', e.target.checked)} className="mt-0.5 h-5 w-5 rounded border-gray-300 text-primary" />
               <div>
                 <div className="text-sm font-medium">DPDP Act 2023 Consent *</div>
-                <div className="text-xs text-text-light mt-0.5">I consent to the processing of my personal data in accordance with the Digital Personal Data Protection Act, 2023. I understand my data will be stored securely in India.</div>
+                <div className="text-xs text-text-light mt-0.5">I consent to the processing of my personal data in accordance with the Digital Personal Data Protection Act, 2023.</div>
               </div>
             </label>
 
@@ -398,11 +522,11 @@ export default function ProviderApplyPage() {
               <input type="checkbox" checked={form.termsAgreed} onChange={(e) => update('termsAgreed', e.target.checked)} className="mt-0.5 h-5 w-5 rounded border-gray-300 text-primary" />
               <div>
                 <div className="text-sm font-medium">Terms & Conditions *</div>
-                <div className="text-xs text-text-light mt-0.5">I agree to the Help & Heal provider terms and conditions, including the 70/30 revenue split, weekly payouts via RazorpayX, and session conduct guidelines.</div>
+                <div className="text-xs text-text-light mt-0.5">I agree to the Help & Heal provider terms including the 70/30 revenue split, weekly payouts, and session conduct guidelines.</div>
               </div>
             </label>
 
-            <div className="mt-4 rounded-xl bg-primary/5 p-4">
+            <div className="rounded-xl bg-primary/5 p-4">
               <h3 className="text-sm font-semibold">What happens next?</h3>
               <ol className="mt-2 space-y-1 text-xs text-text-light list-decimal list-inside">
                 <li>Our team reviews your application (2-3 business days)</li>
@@ -417,7 +541,7 @@ export default function ProviderApplyPage() {
       </div>
 
       {/* Navigation */}
-      <div className="flex items-center justify-between border-t border-gray-100 p-6">
+      <div className="flex items-center justify-between border-t border-gray-100 p-4 sm:p-6">
         <button
           onClick={() => step > 0 ? setStep(step - 1) : router.back()}
           className="flex items-center gap-2 text-sm text-text-light hover:text-text"
@@ -425,12 +549,13 @@ export default function ProviderApplyPage() {
           <ArrowLeft className="h-4 w-4" /> {step > 0 ? 'Back' : 'Cancel'}
         </button>
 
-        {step < 3 ? (
+        {!isLastStep ? (
           <button
-            onClick={() => setStep(step + 1)}
-            className="flex items-center gap-2 rounded-xl bg-primary px-6 py-2.5 text-sm font-semibold text-white hover:bg-primary-dark"
+            onClick={handleNext}
+            disabled={loading}
+            className="flex items-center gap-2 rounded-xl bg-primary px-6 py-2.5 text-sm font-semibold text-white hover:bg-primary-dark disabled:opacity-50"
           >
-            Next <ArrowRight className="h-4 w-4" />
+            {loading ? 'Creating account...' : 'Next'} <ArrowRight className="h-4 w-4" />
           </button>
         ) : (
           <button
@@ -438,8 +563,7 @@ export default function ProviderApplyPage() {
             disabled={loading || !form.codeOfEthicsAgreed || !form.dpdpConsentAgreed || !form.termsAgreed}
             className="flex items-center gap-2 rounded-xl bg-secondary px-6 py-2.5 text-sm font-semibold text-white hover:bg-secondary-dark disabled:opacity-50"
           >
-            {loading ? 'Submitting...' : 'Submit Application'}
-            <Check className="h-4 w-4" />
+            {loading ? 'Submitting...' : 'Submit Application'} <Check className="h-4 w-4" />
           </button>
         )}
       </div>

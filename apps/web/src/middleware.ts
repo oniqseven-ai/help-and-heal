@@ -15,6 +15,5 @@ export const config = {
     '/profile/:path*',
     '/admin/:path*',
     '/provider/:path*',
-    '/provider-apply',
   ],
 };
