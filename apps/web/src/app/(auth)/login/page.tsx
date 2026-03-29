@@ -29,7 +29,16 @@ export default function LoginPage() {
       setError('Invalid phone number or password.');
       setLoading(false);
     } else {
-      router.push('/dashboard');
+      // Fetch session to check role for redirect
+      const sessionRes = await fetch('/api/auth/session');
+      const sessionData = await sessionRes.json();
+      const role = sessionData?.user?.role;
+
+      if (role === 'PROVIDER') {
+        router.push('/provider');
+      } else {
+        router.push('/dashboard');
+      }
       router.refresh();
     }
   };

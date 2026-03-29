@@ -14,5 +14,6 @@ export const config = {
     '/self-help/:path*',
     '/profile/:path*',
     '/admin/:path*',
+    '/provider/:path*',
   ],
 };

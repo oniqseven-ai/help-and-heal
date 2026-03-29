@@ -84,6 +84,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </nav>
 
           <div className="border-t border-gray-100 p-3">
+            {(userRole === 'PROVIDER' || userRole === 'ADMIN') && (
+              <Link
+                href="/provider"
+                className="flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium text-secondary hover:bg-secondary/10"
+              >
+                <ShieldCheck className="h-5 w-5" />
+                Provider Dashboard
+              </Link>
+            )}
             {userRole === 'ADMIN' && (
               <Link
                 href="/admin"
