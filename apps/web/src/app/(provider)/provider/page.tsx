@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Phone, Wallet, Clock, TrendingUp, ArrowRight } from 'lucide-react';
+import { Phone, Wallet, Clock, TrendingUp, ArrowRight, MessageCircle, AlertCircle } from 'lucide-react';
 import { formatPaise } from '@/lib/mock-data';
 
 interface EarningsData {
@@ -12,21 +12,41 @@ interface EarningsData {
   totalMinutes: number;
 }
 
+interface ActiveSession {
+  id: string;
+  status: string;
+  type: string;
+  createdAt: string;
+}
+
 export default function ProviderHomePage() {
   const [today, setToday] = useState<EarningsData | null>(null);
   const [week, setWeek] = useState<EarningsData | null>(null);
   const [month, setMonth] = useState<EarningsData | null>(null);
+  const [activeSession, setActiveSession] = useState<ActiveSession | null>(null);
 
   useEffect(() => {
     Promise.all([
       fetch('/api/provider/earnings?period=today').then((r) => r.json()),
       fetch('/api/provider/earnings?period=week').then((r) => r.json()),
       fetch('/api/provider/earnings?period=month').then((r) => r.json()),
-    ]).then(([t, w, m]) => {
+      fetch('/api/provider/active-session').then((r) => r.json()),
+    ]).then(([t, w, m, a]) => {
       if (t.success) setToday(t.data);
       if (w.success) setWeek(w.data);
       if (m.success) setMonth(m.data);
+      if (a.success && a.data) setActiveSession(a.data);
     });
+  }, []);
+
+  // Poll for incoming sessions every 5s
+  useEffect(() => {
+    const poll = setInterval(async () => {
+      const res = await fetch('/api/provider/active-session');
+      const data = await res.json();
+      if (data.success) setActiveSession(data.data);
+    }, 5000);
+    return () => clearInterval(poll);
   }, []);
 
   return (
@@ -35,6 +55,31 @@ export default function ProviderHomePage() {
         <h1 className="text-2xl font-bold md:text-3xl">Provider Dashboard</h1>
         <p className="mt-1 text-text-light">Your performance at a glance</p>
       </div>
+
+      {/* Active/Incoming session */}
+      {activeSession && (
+        <Link
+          href={`/provider/session/${activeSession.id}`}
+          className="flex items-center gap-4 rounded-2xl border-2 border-secondary bg-secondary/5 p-5 animate-pulse"
+        >
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-secondary/20">
+            {activeSession.status === 'WAITING' ? (
+              <AlertCircle className="h-6 w-6 text-secondary" />
+            ) : (
+              <MessageCircle className="h-6 w-6 text-secondary" />
+            )}
+          </div>
+          <div className="flex-1">
+            <p className="font-bold text-secondary">
+              {activeSession.status === 'WAITING' ? 'Incoming Session Request!' : 'Active Session'}
+            </p>
+            <p className="text-sm text-text-light">
+              {activeSession.status === 'WAITING' ? 'A user wants to chat with you. Tap to accept.' : 'You have an active chat session. Tap to continue.'}
+            </p>
+          </div>
+          <ArrowRight className="h-5 w-5 text-secondary" />
+        </Link>
+      )}
 
       {/* Today's stats */}
       <div>
