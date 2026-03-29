@@ -169,7 +169,10 @@ export default function ProfilePage() {
                 Cancel
               </button>
               <button
-                onClick={() => setShowDeleteConfirm(false)}
+                onClick={async () => {
+                  await fetch('/api/auth/delete-account', { method: 'DELETE' });
+                  signOut({ callbackUrl: '/' });
+                }}
                 className="flex-1 rounded-xl bg-error py-2.5 text-sm font-semibold text-white hover:bg-error/90"
               >
                 Delete

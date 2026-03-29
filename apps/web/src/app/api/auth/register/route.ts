@@ -1,9 +1,19 @@
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/db';
+import { checkRateLimit } from '@/lib/api-utils';
 
 export async function POST(req: Request) {
   try {
+    // Rate limit: 5 registrations per IP per minute
+    const ip = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown';
+    if (!checkRateLimit(`register:${ip}`, 5, 60000)) {
+      return NextResponse.json(
+        { success: false, error: 'Too many requests. Please try again later.' },
+        { status: 429 },
+      );
+    }
+
     const { name, phone, password, language } = await req.json();
 
     if (!phone || !password) {

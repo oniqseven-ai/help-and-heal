@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { getChecklistForTier } from '@/lib/compliance';
+import { encryptField } from '@/lib/api-utils';
 
 export async function POST(req: Request) {
   try {
@@ -53,9 +54,9 @@ export async function POST(req: Request) {
         requestedRate: data.requestedRate,
         yearsExperience: data.yearsExperience || 0,
         governmentIdType: data.governmentIdType || null,
-        governmentIdNumber: data.governmentIdNumber || null,
-        aadhaarNumber: data.aadhaarNumber || null,
-        panNumber: data.panNumber || null,
+        governmentIdNumber: data.governmentIdNumber ? encryptField(data.governmentIdNumber) : null,
+        aadhaarNumber: data.aadhaarNumber ? encryptField(data.aadhaarNumber) : null,
+        panNumber: data.panNumber ? encryptField(data.panNumber) : null,
         highestDegree: data.highestDegree || null,
         university: data.university || null,
         graduationYear: data.graduationYear ? parseInt(data.graduationYear) : null,

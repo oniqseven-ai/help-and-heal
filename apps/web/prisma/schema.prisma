@@ -128,6 +128,8 @@ model WalletTransaction {
   sessionId         String?
   createdAt         DateTime        @default(now())
 
+  @@index([walletId])
+  @@index([createdAt])
   @@map("wallet_transactions")
 }
 
@@ -152,6 +154,10 @@ model Session {
   rating   Rating?
   messages SessionMessage[]
 
+  @@index([userId])
+  @@index([providerId])
+  @@index([status])
+  @@index([createdAt])
   @@map("sessions")
 }
 
@@ -163,6 +169,8 @@ model SessionMessage {
   content    String
   createdAt  DateTime @default(now())
 
+  @@index([sessionId])
+  @@index([createdAt])
   @@map("session_messages")
 }
 

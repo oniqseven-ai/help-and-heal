@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 
-export async function GET() {
+export async function DELETE() {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
@@ -12,23 +12,14 @@ export async function GET() {
 
     const userId = (session.user as { id: string }).id;
 
-    const wallet = await prisma.wallet.findUnique({
-      where: { userId },
-      include: {
-        transactions: {
-          orderBy: { createdAt: 'desc' },
-          take: 20,
-        },
-      },
+    // Cascade delete handles: wallet, wallet_transactions, sessions,
+    // session_messages, ratings, provider, provider_application,
+    // compliance_checklist_items
+    await prisma.user.delete({
+      where: { id: userId },
     });
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        balance: wallet?.balance ?? 0,
-        transactions: wallet?.transactions ?? [],
-      },
-    });
+    return NextResponse.json({ success: true, data: { message: 'Account deleted successfully' } });
   } catch (error) {
     console.error('API error:', error);
     return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
