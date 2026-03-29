@@ -13,5 +13,6 @@ export const config = {
     '/session/:path*',
     '/self-help/:path*',
     '/profile/:path*',
+    '/admin/:path*',
   ],
 };

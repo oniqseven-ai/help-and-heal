@@ -46,20 +46,37 @@ enum TransactionType {
   BONUS
 }
 
+enum UserRole {
+  USER
+  PROVIDER
+  ADMIN
+}
+
+enum ApplicationStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  RESUBMISSION_REQUESTED
+}
+
 model User {
   id                 String    @id @default(uuid())
   phone              String?   @unique
   email              String?   @unique
   passwordHash       String?
   name               String?
+  role               UserRole  @default(USER)
   languagePreference Language  @default(en)
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
-  wallet   Wallet?
-  provider Provider?
-  sessions Session[]  @relation("UserSessions")
-  ratings  Rating[]
+  wallet              Wallet?
+  provider            Provider?
+  providerApplication ProviderApplication?
+  sessions            Session[]  @relation("UserSessions")
+  ratings             Rating[]
 
   @@map("users")
 }
@@ -162,4 +179,89 @@ model Rating {
   createdAt  DateTime @default(now())
 
   @@map("ratings")
+}
+
+model ProviderApplication {
+  id     String            @id @default(uuid())
+  userId String            @unique
+  user   User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status ApplicationStatus @default(DRAFT)
+
+  // Personal
+  fullName    String
+  displayName String
+  phone       String
+  email       String?
+  dateOfBirth String?
+  gender      String?
+
+  // Professional
+  tier            ProviderTier
+  bio             String        @default("")
+  specialties     String[]
+  languages       String[]
+  requestedRate   Int
+  yearsExperience Int           @default(0)
+
+  // Identity documents
+  governmentIdType   String?
+  governmentIdNumber String?
+  aadhaarNumber      String?
+  panNumber          String?
+
+  // Education
+  highestDegree    String?
+  university       String?
+  graduationYear   Int?
+  degreeCertNumber String?
+
+  // Professional registration
+  rciRegistrationNo  String?
+  nmcRegistrationNo  String?
+  registrationExpiry DateTime?
+
+  // Insurance
+  hasIndemnityInsurance Boolean @default(false)
+  insurancePolicyNumber String?
+
+  // Agreements
+  codeOfEthicsAgreed Boolean @default(false)
+  dpdpConsentAgreed  Boolean @default(false)
+  termsAgreed        Boolean @default(false)
+
+  // Training
+  trainingCompleted   Boolean   @default(false)
+  trainingCompletedAt DateTime?
+
+  // Background check
+  backgroundCheckStatus String @default("PENDING")
+
+  // Admin review
+  reviewedBy      String?
+  reviewedAt      DateTime?
+  reviewNotes     String?
+  rejectionReason String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  checklistItems ComplianceChecklistItem[]
+
+  @@map("provider_applications")
+}
+
+model ComplianceChecklistItem {
+  id            String              @id @default(uuid())
+  applicationId String
+  application   ProviderApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  key           String
+  label         String
+  isRequired    Boolean             @default(true)
+  isCompleted   Boolean             @default(false)
+  completedBy   String?
+  completedAt   DateTime?
+  notes         String?
+
+  @@unique([applicationId, key])
+  @@map("compliance_checklist_items")
 }
